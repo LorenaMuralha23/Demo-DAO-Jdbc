@@ -97,8 +97,44 @@ public class SellerDaoJDBC implements SellerDao{
 
 	@Override
 	public List<Seller> findAll() {
-		// TODO Auto-generated method stub
-		return null;
+		PreparedStatement st = null;
+		ResultSet rs = null; //ele aponta, de forma padrão, para a posição zero. Ao executar uma query, o objeto retornado vai para a posição 1
+		try {
+			
+			st = conn.prepareStatement("SELECT seller.*, department.Name as DepName"
+					+ " FROM seller INNER JOIN department"
+					+ " ON seller.DepartmentId = department.Id"
+					+ " ORDER BY Name");
+			
+			rs = st.executeQuery();
+			
+			List<Seller> list = new ArrayList<Seller>();
+			Map<Integer, Department> map = new HashMap<Integer, Department>();
+			
+			while (rs.next()) {//com a explicação lá de cima, entendemos que esse next é feito para observar se existe uma posição 1. Isso é, se algum obj foi retornado :)
+				
+				//retornará falso caso na lista do map não existir o departamento
+				Department dep = map.get(rs.getInt("DepartmentId"));
+				
+				if (dep == null) {
+					dep = instantiateDepartment(rs);
+					map.put(rs.getInt("DepartmentId"), dep);
+				}
+				
+				
+				Seller obj = instantiateSeller(rs, dep);				
+				list.add(obj);
+			}
+			
+			return list;
+			
+		} catch (SQLException e) {
+			throw new DbException(e.getMessage());
+		} 
+		finally {
+			DB.closeStatement(st);
+			DB.closeResultSet(rs);
+		}
 	}
 
 	@Override
